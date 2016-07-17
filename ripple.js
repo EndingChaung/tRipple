@@ -63,26 +63,52 @@
 		
 		this.rippleElement_ = rippleElement;
 		this.rippleScale_ = 'scale(0.001, 0.001)';
+		this.scale_ = 0.001;
+		this.offset;
 		
-		utils.registerEventHandler(this.ele, 'click', function(e) {
+		utils.registerEventHandler(this.ele, 'mousedown', function(e) {
 			var rect = self.ele.getBoundingClientRect();
 			var radius = Math.sqrt(rect.width*rect.width + rect.height*rect.height);
 			
-			var transformString, offset;
+			var transformString;
 			x = e.clientX - rect.left;
 			y = e.clientY - rect.top;
-			offset = 'translate(' + x + 'px, ' + y + 'px)';
-			transformString = offset + ' translate(-50%, -50%)' + ' scale(0.001, 0.001)'
+			self.offset = 'translate(' + x + 'px, ' + y + 'px)';
+			transformString = self.offset + ' translate(-50%, -50%)' + ' scale(0.001, 0.001)'
 			
 			self.rippleElement_.style.width = radius*2 + 'px';
 			self.rippleElement_.style.height = radius*2 + 'px';
 			self.rippleElement_.style.transform = transformString;
+			self.rippleElement_.style.opacity = '0.4';
 			
-			requestAnimationFrame(function() {
-				self.rippleElement_.style.transform = offset + ' translate(-50%, -50%)' + ' scale(1, 1)';
-			});
+			requestAnimationFrame(self.ripple.bind(self));
+//			self.rippleElement_.style.transform = self.offset + ' translate(-50%, -50%)' + ' scale(1, 1)';
+		});
+		
+		utils.registerEventHandler(this.ele, 'mouseup', function(e) {
+			setTimeout(function() {
+				self.rippleElement_.style.opacity = '0';
+			}, 0)
+			
 		});
 	}
+	
+	Ripple.prototype.ripple = function() {
+		this.scale_ = this.scale_ + 0.03;
+		this.rippleElement_.style.transform = this.offset + ' translate(-50%, -50%)' + ' scale('
+											+ this.scale_ + ', ' + this.scale_ + ')';
+	
+		if(this.scale_ < 1) {
+				this.rippleElement_.style.backgroundColor = 'blue';
+			requestAnimationFrame(this.ripple.bind(this));
+		} else {
+			this.scale_ = 0.01;
+			self.rippleElement_.style.opacity = '0';
+		}
+		
+		
+	}
+	
 	
 	function upgradeElements() {
 		var eles = document.querySelectorAll('.' + rippleClassName);
