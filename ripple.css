@@ -1,0 +1,17 @@
+.ripple {
+	display: inline-block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	border-radius: 50%;
+	
+	background-color: red;
+}
+
+.ripple-container {
+	display: inline-block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	
+}
