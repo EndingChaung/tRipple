@@ -37,7 +37,7 @@
 				}
 			}
 			return -1;
-		},
+		}
 
 	}
 	
@@ -62,54 +62,59 @@
 		this.ele.appendChild(rippleContainer);
 		
 		this.rippleElement_ = rippleElement;
-		this.rippleScale_ = 'scale(0.001, 0.001)';
-		this.scale_ = 0.001;
-		this.offset;
 		
-		utils.registerEventHandler(this.ele, 'mousedown', function(e) {
-			var rect = self.ele.getBoundingClientRect();
-			var radius = Math.sqrt(rect.width*rect.width + rect.height*rect.height);
-			
-			var transformString;
-			x = e.clientX - rect.left;
-			y = e.clientY - rect.top;
-			self.offset = 'translate(' + x + 'px, ' + y + 'px)';
-			transformString = self.offset + ' translate(-50%, -50%)' + ' scale(0.001, 0.001)'
-			
-			self.rippleElement_.style.width = radius*2 + 'px';
-			self.rippleElement_.style.height = radius*2 + 'px';
-			self.rippleElement_.style.transform = transformString;
-			self.rippleElement_.style.opacity = '0.4';
-			
-			requestAnimationFrame(self.ripple.bind(self));
-//			self.rippleElement_.style.transform = self.offset + ' translate(-50%, -50%)' + ' scale(1, 1)';
-		});
+		utils.registerEventHandler(this.ele, 'mousedown', this.downHandler.bind(this));
 		
-		utils.registerEventHandler(this.ele, 'mouseup', function(e) {
-			setTimeout(function() {
-				self.rippleElement_.style.opacity = '0';
-			}, 0)
-			
-		});
+		utils.registerEventHandler(this.ele, 'mouseup', this.upHandler.bind(this));
 	}
 	
-	Ripple.prototype.ripple = function() {
-		this.scale_ = this.scale_ + 0.03;
-		this.rippleElement_.style.transform = this.offset + ' translate(-50%, -50%)' + ' scale('
-											+ this.scale_ + ', ' + this.scale_ + ')';
+	Ripple.prototype.downHandler = function(e) {
+		var rect = this.ele.getBoundingClientRect();
+		var radius = Math.sqrt(rect.width*rect.width + rect.height*rect.height);
+		
+		var transformString;
+		x = e.clientX - rect.left;
+		y = e.clientY - rect.top;
+		this.offset = 'translate(' + x + 'px, ' + y + 'px)';
+		transformString = this.offset + ' translate(-50%, -50%)' + ' scale(0.001, 0.001)'
+		
+		this.rippleElement_.style.width = radius*2 + 'px';
+		this.rippleElement_.style.height = radius*2 + 'px';
+		this.rippleElement_.style.transform = transformString;
+		this.rippleElement_.style.opacity = '0.4';
+		
+		this.setRippleStyle(true);
+		utils.removeClass(this.rippleElement_, 'ani');
+		this.frameCount = 1;
+		this.animationHandler = function() {
+			if(this.frameCount-- > 0) {
+				requestAnimationFrame(this.animationHandler.bind(this))
+			} else {
+				this.setRippleStyle(false);
+				utils.addClass(this.rippleElement_, 'ani');
+			}
+		};
+		this.animationHandler.bind(this)();
+	}
 	
-		if(this.scale_ < 1) {
-				this.rippleElement_.style.backgroundColor = 'blue';
-			requestAnimationFrame(this.ripple.bind(this));
-		} else {
-			this.scale_ = 0.01;
+	Ripple.prototype.upHandler = function(e) {
+		var self = this;
+		setTimeout(function() {
 			self.rippleElement_.style.opacity = '0';
-		}
-		
-		
+		}, 0)	
 	}
 	
 	
+	Ripple.prototype.setRippleStyle = function(start) {
+		var scaleStr = 'scale('+ this.scale_ + ', ' + this.scale_ + ')';
+		if(start) {
+			scaleStr = 'scale(0.001, 0.001)';
+		} else {
+			scaleStr = 'scale(1, 1)';
+		}
+		this.rippleElement_.style.transform = this.offset + ' translate(-50%, -50%)' + ' ' + scaleStr;
+	}
+		
 	function upgradeElements() {
 		var eles = document.querySelectorAll('.' + rippleClassName);
 		for(var i=0;i < eles.length;i++) {
