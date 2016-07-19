@@ -47,54 +47,33 @@
 		if( !(this instanceof Ripple) ) {
 			return new Ripple(element);
 		}
-		this.ele = element;
+		this.ele_ = element;
 		this.init();
 	}
 	
-	Ripple.prototype.init = function() {
-		var self = this;
+	Ripple.Const_ = {
+		FRAME_COUNT: 1
+	}
+	
+	Ripple.prototype.init = function() {		
+		this.rippleContainer_ = document.createElement('span');// 有overflow hidden的样式，控制波纹的边界
+		this.rippleElement_  = document.createElement('span');// 波纹
+		utils.addClass(this.rippleContainer_, 'ripple-container');
+		utils.addClass(this.rippleElement_, 'ripple');		
+		this.rippleContainer_.appendChild(this.rippleElement_);
+		this.ele_.appendChild(this.rippleContainer_);
 		
-		var rippleContainer = document.createElement('span');
-		var rippleElement = document.createElement('span');
-		utils.addClass(rippleContainer, 'ripple-container');
-		utils.addClass(rippleElement, 'ripple');
-		rippleContainer.appendChild(rippleElement);
-		this.ele.appendChild(rippleContainer);
+		this.frameCount_ = Ripple.Const_.FRAME_COUNT;// 控制点击之后在哪个刷新周期内产生波纹
 		
-		this.rippleElement_ = rippleElement;
+		utils.registerEventHandler(this.ele_, 'mousedown', this.downHandler.bind(this));
 		
-		utils.registerEventHandler(this.ele, 'mousedown', this.downHandler.bind(this));
-		
-		utils.registerEventHandler(this.ele, 'mouseup', this.upHandler.bind(this));
+		utils.registerEventHandler(this.ele_, 'mouseup', this.upHandler.bind(this));
 	}
 	
 	Ripple.prototype.downHandler = function(e) {
-		var rect = this.ele.getBoundingClientRect();
-		var radius = Math.sqrt(rect.width*rect.width + rect.height*rect.height);
+		this.initRipple(e);
+		this.startRipple();
 		
-		var transformString;
-		x = e.clientX - rect.left;
-		y = e.clientY - rect.top;
-		this.offset = 'translate(' + x + 'px, ' + y + 'px)';
-		transformString = this.offset + ' translate(-50%, -50%)' + ' scale(0.001, 0.001)'
-		
-		this.rippleElement_.style.width = radius*2 + 'px';
-		this.rippleElement_.style.height = radius*2 + 'px';
-		this.rippleElement_.style.transform = transformString;
-		this.rippleElement_.style.opacity = '0.4';
-		
-		this.setRippleStyle(true);
-		utils.removeClass(this.rippleElement_, 'ani');
-		this.frameCount = 1;
-		this.animationHandler = function() {
-			if(this.frameCount-- > 0) {
-				requestAnimationFrame(this.animationHandler.bind(this))
-			} else {
-				this.setRippleStyle(false);
-				utils.addClass(this.rippleElement_, 'ani');
-			}
-		};
-		this.animationHandler.bind(this)();
 	}
 	
 	Ripple.prototype.upHandler = function(e) {
@@ -104,15 +83,51 @@
 		}, 0)	
 	}
 	
+	/**
+	 * 初始化位置，大小
+	 **/
+	Ripple.prototype.initRipple = function(e) {
+		var rect, x, y, scaleStr, radius;
+		
+		rect = this.ele_.getBoundingClientRect();
+		x = e.clientX - rect.left,
+		y = e.clientY - rect.top;
+		this.offset_ = 'translate(' + x + 'px, ' + y + 'px)';
+
+		radius = Math.sqrt(rect.width*rect.width + rect.height*rect.height);
+		scaleStr = 'scale(0.001, 0.001)';
+		
+		var transformStr = this.offset_ + ' translate(-50%, -50%)' + ' ' + scaleStr;
+		
+		this.rippleElement_.style.width = radius*2 + 'px';
+		this.rippleElement_.style.height = radius*2 + 'px';
+		this.rippleElement_.style.transform = transformStr;
+		this.rippleElement_.style.msTransform = transformStr;
+        this.rippleElement_.style.transform = transformStr;
+		this.rippleElement_.style.opacity = '0.4';
+		
+		utils.removeClass(this.rippleElement_, 'is-animating');
+		
+		this.rippleContainer_.style.width = rect.width + 'px';
+		this.rippleContainer_.style.height = rect.height + 'px';
+	}
 	
-	Ripple.prototype.setRippleStyle = function(start) {
-		var scaleStr = 'scale('+ this.scale_ + ', ' + this.scale_ + ')';
-		if(start) {
-			scaleStr = 'scale(0.001, 0.001)';
-		} else {
-			scaleStr = 'scale(1, 1)';
-		}
-		this.rippleElement_.style.transform = this.offset + ' translate(-50%, -50%)' + ' ' + scaleStr;
+	
+	Ripple.prototype.startRipple = function() {
+		this.animationHandler = function() {
+			if(this.frameCount_-- > 0) {
+				requestAnimationFrame(this.animationHandler.bind(this))
+			} else {
+				// 开始动画
+				var transformStr = this.offset_ + ' translate(-50%, -50%)' + ' ' + 'scale(1, 1)';
+				this.rippleElement_.style.transform = transformStr;
+				this.rippleElement_.style.msTransform = transformStr;
+				this.rippleElement_.style.transform = transformStr;
+				utils.addClass(this.rippleElement_, 'is-animating');
+				this.frameCount_ = Ripple.Const_.FRAME_COUNT;
+			}
+		};
+		this.animationHandler.bind(this)();
 	}
 		
 	function upgradeElements() {
